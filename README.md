@@ -178,8 +178,11 @@ Rapport Partie 3 & 4
 | Script simulation réseau | `ns3/lpwan-notto-gouye.cc` | NS-3 |
 | Topologie réseau | `omnetpp/LPWAN_Notto_Gouye.ned` | OMNeT++ |
 | Configuration scénarios | `omnetpp/omnetpp.ini` | OMNeT++ |
-| Rapport Word/PDF | À rédiger | — |
-| Présentation PPT | À rédiger | — |
+| Rapport Word/PDF | 
+| Présentation PPT | 
+| Plateforme IOT   | 
+
+
 
 ---
 
@@ -194,3 +197,4 @@ Rapport Partie 3 & 4
 
 ---
 *Master 1 IA & Smart Tech — Dr. I. GUEYE — Réseaux sans fil 2025-2026*
+## Auteur Talla DIOP Master 1 IA & Smart Tech
