@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LPWAN – Notto Gouye Diama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root {
+  --bg: #0a0f1e;
+  --bg2: #0f1729;
+  --bg3: #141e35;
+  --border: rgba(99,210,159,0.12);
+  --green: #63d29f;
+  --green2: #1a9e6a;
+  --blue: #4fa3f7;
+  --orange: #f5a623;
+  --red: #f26b6b;
+  --purple: #a78bfa;
+  --text: #e2e8f0;
+  --muted: #7a8aa0;
+  --card: #111c2f;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+
+/* === SIDEBAR === */
+.sidebar {
+  width:240px; min-height:100vh; background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; z-index:100;
+  padding:0 0 20px;
+}
+.logo {
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.logo-icon { width:36px;height:36px;background:linear-gradient(135deg,var(--green),var(--blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px; }
+.logo h2 { font-size:14px; font-weight:700; line-height:1.3; color:var(--text); }
+.logo p { font-size:10px; color:var(--muted); }
+nav { padding:16px 12px; flex:1; }
+.nav-group { margin-bottom:6px; }
+.nav-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.2px; padding:6px 8px; font-weight:600; }
+.nav-item {
+  padding:10px 12px; border-radius:10px; cursor:pointer;
+  display:flex; align-items:center; gap:10px; font-size:13px; font-weight:500;
+  color:var(--muted); transition:.2s; margin-bottom:2px;
+}
+.nav-item:hover { background:var(--bg3); color:var(--text); }
+.nav-item.active { background:rgba(99,210,159,0.1); color:var(--green); }
+.nav-item i { font-size:16px; }
+.sidebar-footer { padding:14px 20px; border-top:1px solid var(--border); }
+.sf-badge { background:rgba(99,210,159,0.12); color:var(--green); border-radius:8px; padding:8px 12px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+
+/* === MAIN === */
+.main { margin-left:240px; flex:1; padding:24px; min-height:100vh; }
+.topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+.topbar-title h1 { font-size:20px; font-weight:700; }
+.topbar-title p { color:var(--muted); font-size:13px; margin-top:2px; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.status-dot { width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.status-pill { display:flex;align-items:center;gap:7px;background:rgba(99,210,159,0.08);border:1px solid rgba(99,210,159,0.2);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--green); }
+.time-display { font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);background:var(--bg3);border-radius:8px;padding:6px 12px; }
+
+/* === KPI === */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.kpi-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:18px; position:relative; overflow:hidden;
+  transition:.2s;
+}
+.kpi-card:hover { transform:translateY(-2px); border-color:rgba(99,210,159,0.25); }
+.kpi-card::before { content:''; position:absolute; top:0;right:0;width:60px;height:60px;border-radius:0 14px 0 100%;opacity:.06; }
+.kpi-card.green::before { background:var(--green); }
+.kpi-card.blue::before { background:var(--blue); }
+.kpi-card.orange::before { background:var(--orange); }
+.kpi-card.purple::before { background:var(--purple); }
+.kpi-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; font-weight:600; margin-bottom:8px; }
+.kpi-value { font-size:28px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.kpi-value.green { color:var(--green); }
+.kpi-value.blue { color:var(--blue); }
+.kpi-value.orange { color:var(--orange); }
+.kpi-value.purple { color:var(--purple); }
+.kpi-sub { font-size:11px; color:var(--muted); margin-top:6px; }
+.kpi-trend { font-size:11px; margin-top:4px; }
+.up { color:var(--green); } .down { color:var(--red); }
+
+/* === TABS === */
+.tabs { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+.tab-btn {
+  padding:9px 16px; border:1px solid var(--border);
+  background:var(--card); border-radius:10px; color:var(--muted);
+  font-size:13px; font-weight:600; cursor:pointer; transition:.2s;
+  font-family:'Space Grotesk',sans-serif;
+}
+.tab-btn:hover { color:var(--text); border-color:rgba(99,210,159,0.3); }
+.tab-btn.active { background:rgba(99,210,159,0.1); border-color:var(--green); color:var(--green); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* === GRID LAYOUTS === */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+.full { grid-column:1/-1; }
+
+/* === CARDS === */
+.panel {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; padding:22px;
+}
+.panel h3 { font-size:14px; font-weight:700; color:var(--text); margin-bottom:16px; display:flex;align-items:center;gap:8px; }
+.panel h3 i { color:var(--green); font-size:16px; }
+.chart-wrap { position:relative; height:220px; }
+.chart-wrap-tall { position:relative; height:300px; }
+
+/* === TABLE === */
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:10px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); font-weight:600; border-bottom:1px solid var(--border); }
+td { padding:10px 12px; border-bottom:1px solid rgba(99,210,159,0.05); font-family:'JetBrains Mono',monospace; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(99,210,159,0.03); }
+.tag { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:700; font-family:'Space Grotesk',sans-serif; }
+.tag-green { background:rgba(99,210,159,0.12); color:var(--green); }
+.tag-orange { background:rgba(245,166,35,0.12); color:var(--orange); }
+.tag-red { background:rgba(242,107,107,0.12); color:var(--red); }
+.tag-blue { background:rgba(79,163,247,0.12); color:var(--blue); }
+.tag-purple { background:rgba(167,139,250,0.12); color:var(--purple); }
+.opt-row { background:rgba(99,210,159,0.04); }
+
+/* === SENSOR CARDS === */
+.sensor-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.sensor-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; transition:.2s; }
+.sensor-card:hover { border-color:rgba(99,210,159,0.3); transform:translateY(-2px); }
+.sensor-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.sensor-name { font-size:14px; font-weight:700; }
+.sensor-val { font-size:36px; font-weight:700; font-family:'JetBrains Mono',monospace; margin-bottom:12px; }
+.sensor-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat-item { background:var(--bg3); border-radius:8px; padding:8px 10px; }
+.stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+.stat-val { font-size:13px; font-weight:600; font-family:'JetBrains Mono',monospace; margin-top:2px; }
+.battery-bar { height:4px; background:var(--bg3); border-radius:2px; margin-top:10px; overflow:hidden; }
+.battery-fill { height:100%; border-radius:2px; transition:.5s; }
+
+/* === SIMULATION === */
+.sim-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.control-group { margin-bottom:20px; }
+.control-label { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:600; }
+.control-label span { font-family:'JetBrains Mono',monospace; color:var(--green); font-size:14px; font-weight:700; }
+input[type=range] { width:100%; accent-color:var(--green); height:4px; border-radius:2px; outline:none; cursor:pointer; background:var(--bg3); }
+.btn {
+  background:linear-gradient(135deg,var(--green2),var(--green));
+  color:#0a1a10; border:none; padding:12px 22px;
+  border-radius:10px; cursor:pointer; font-size:13px; font-weight:700;
+  font-family:'Space Grotesk',sans-serif; transition:.2s; width:100%;
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;
+}
+.btn:hover { opacity:.9; transform:translateY(-1px); }
+.sim-result-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
+.sim-result-item { background:var(--bg3); border-radius:10px; padding:12px; text-align:center; }
+.sim-result-val { font-size:20px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.sim-result-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-top:4px; }
+
+/* === TOPOLOGY === */
+.topo-container { display:flex; align-items:center; justify-content:center; gap:0; padding:30px 0; flex-wrap:wrap; }
+.topo-node { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:100px; }
+.topo-icon { width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px; animation:float 3s ease-in-out infinite; }
+.topo-node:nth-child(2) .topo-icon { animation-delay:.5s; }
+.topo-node:nth-child(4) .topo-icon { animation-delay:1s; }
+.topo-node:nth-child(6) .topo-icon { animation-delay:1.5s; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+.topo-name { font-size:12px; font-weight:600; color:var(--muted); text-align:center; }
+.topo-sub { font-size:10px; color:var(--muted); opacity:.6; text-align:center; }
+.topo-arrow { display:flex; align-items:center; padding:0 10px; }
+.topo-arrow-line { width:50px; height:2px; background:linear-gradient(90deg,var(--green),var(--blue)); position:relative; }
+.topo-arrow-line::after { content:'▶'; position:absolute; right:-8px; top:-7px; color:var(--blue); font-size:12px; }
+.topo-proto { font-size:10px; color:var(--green); text-align:center; margin-top:2px; font-family:'JetBrains Mono',monospace; }
+
+/* === COMPARE TABLE === */
+.compare-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.tech-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; text-align:center; }
+.tech-card.selected { border-color:var(--green); background:rgba(99,210,159,0.05); }
+.tech-name { font-size:18px; font-weight:800; margin-bottom:4px; }
+.tech-badge { font-size:11px; color:var(--muted); margin-bottom:16px; }
+.tech-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.tech-row:last-child { border-bottom:none; }
+.tech-key { color:var(--muted); }
+.tech-val { font-weight:600; font-family:'JetBrains Mono',monospace; }
+
+/* === QOS SECTION === */
+.qos-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.progress-item { margin-bottom:14px; }
+.progress-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+.progress-bar { height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:3px; transition:width 1s ease; }
+
+/* === ADR / ML === */
+.adr-metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.adr-metric { background:var(--bg3); border-radius:10px; padding:14px; text-align:center; }
+.adr-val { font-size:22px; font-weight:700; font-family:'JetBrains Mono',monospace; margin-bottom:4px; }
+.adr-label { font-size:11px; color:var(--muted); }
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* === MAP === */
+#lpwan-map { height:500px; border-radius:12px; overflow:hidden; z-index:1; }
+.leaflet-popup-content-wrapper { background:#111c2f!important; color:#e2e8f0!important; border:1px solid rgba(99,210,159,0.3)!important; border-radius:10px!important; box-shadow:0 8px 24px rgba(0,0,0,0.5)!important; }
+.leaflet-popup-tip { background:#111c2f!important; }
+.leaflet-popup-content { font-family:'Space Grotesk',sans-serif; font-size:13px; line-height:1.7; min-width:170px; }
+.popup-title { font-weight:700; color:#63d29f; margin-bottom:8px; font-size:14px; border-bottom:1px solid rgba(99,210,159,0.15); padding-bottom:6px; }
+.popup-row { display:flex; justify-content:space-between; gap:16px; padding:2px 0; }
+.popup-key { color:#7a8aa0; }
+.popup-val { font-family:'JetBrains Mono',monospace; font-weight:600; }
+.map-legend { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; margin-top:14px; display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+.legend-item { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+.legend-dot { width:13px; height:13px; border-radius:50%; border:2.5px solid; flex-shrink:0; }
+.legend-sq { width:13px; height:13px; border-radius:4px; border:2.5px solid; flex-shrink:0; }
+
+/* === IRRIGATION === */
+.irrig-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px; }
+.irrig-zone { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; transition:.2s; }
+.irrig-zone:hover { border-color:rgba(99,210,159,0.3); transform:translateY(-2px); }
+.irrig-zone.pumping { border-color:var(--green); box-shadow:0 0 20px rgba(99,210,159,0.1); }
+.irrig-zone.stopped { border-color:rgba(79,163,247,0.3); }
+.irrig-zone.warning { border-color:var(--orange); }
+.irrig-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.irrig-name { font-size:14px; font-weight:700; }
+.irrig-status { font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
+.st-on { background:rgba(99,210,159,0.15); color:var(--green); }
+.st-off { background:rgba(79,163,247,0.12); color:var(--blue); }
+.st-warn { background:rgba(245,166,35,0.12); color:var(--orange); }
+.irrig-params { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.irrig-param { background:var(--bg3); border-radius:8px; padding:8px 10px; }
+.irrig-param-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.irrig-param-val { font-size:14px; font-weight:700; font-family:'JetBrains Mono',monospace; margin-top:2px; }
+.irrig-reason { border-radius:8px; padding:10px 12px; font-size:12px; line-height:1.6; margin-bottom:10px; }
+.reason-on  { background:rgba(99,210,159,0.07); border-left:3px solid var(--green); }
+.reason-off { background:rgba(79,163,247,0.07); border-left:3px solid var(--blue); }
+.reason-warn{ background:rgba(245,166,35,0.07); border-left:3px solid var(--orange); }
+.irrig-btns { display:flex; gap:6px; }
+.ibtn { flex:1; padding:9px 6px; border:none; border-radius:9px; font-size:11px; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:.2s; }
+.ibtn:hover { opacity:.85; }
+.ibtn-on  { background:linear-gradient(135deg,#1a9e6a,#63d29f); color:#0a1a10; }
+.ibtn-off  { background:rgba(242,107,107,0.15); color:var(--red); border:1px solid rgba(242,107,107,0.25); }
+.ibtn-auto { background:var(--bg3); color:var(--muted); border:1px solid var(--border); }
+.threshold-panel { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+.threshold-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:12px; }
+.threshold-item { background:var(--bg3); border-radius:10px; padding:14px; }
+.threshold-lbl { font-size:11px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+.threshold-row { display:flex; align-items:center; gap:8px; }
+.threshold-row input[type=number] { background:var(--bg2); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:7px 10px; font-size:14px; font-family:'JetBrains Mono',monospace; width:80px; outline:none; }
+.threshold-unit { font-size:12px; color:var(--muted); }
+.global-ctrl { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.gctrl { padding:10px 18px; border-radius:10px; border:none; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:.2s; display:flex; align-items:center; gap:6px; }
+.gctrl-green { background:linear-gradient(135deg,#1a9e6a,#63d29f); color:#0a1a10; }
+.gctrl-red   { background:rgba(242,107,107,0.15); color:var(--red); border:1px solid rgba(242,107,107,0.3); }
+.gctrl-blue  { background:rgba(79,163,247,0.12); color:var(--blue); border:1px solid rgba(79,163,247,0.3); }
+.mode-badge  { margin-left:auto; padding:8px 16px; background:var(--card); border:1px solid var(--border); border-radius:10px; font-size:12px; }
+.irrig-log { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; max-height:340px; overflow-y:auto; }
+.log-entry { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(99,210,159,0.05); font-size:12px; }
+.log-entry:last-child { border-bottom:none; }
+.log-time { font-family:'JetBrains Mono',monospace; color:var(--muted); min-width:54px; font-size:11px; }
+.log-icon { font-size:15px; }
+.log-msg { flex:1; color:var(--text); }
+.log-val { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; padding:2px 7px; border-radius:5px; background:var(--bg3); color:var(--green); }
+
+/* === RESPONSIVE === */
+@media(max-width:1100px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:900px) {
+  .sidebar { width:200px; }
+  .main { margin-left:200px; padding:16px; }
+  .grid-2,.grid-3,.sensor-grid,.compare-grid,.sim-grid { grid-template-columns:1fr; }
+}
+@media(max-width:700px) {
+  .sidebar { position:relative; width:100%; min-height:auto; }
+  .main { margin-left:0; }
+  body { flex-direction:column; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <div>
+      <h2>LPWAN Dashboard</h2>
+      <p>Notto Gouye Diama</p>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-group">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active" onclick="switchTab('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Tableau de bord</div>
+      <div class="nav-item" onclick="switchTab('sensors',this)"><i class="ti ti-plant-2"></i>Capteurs IoT</div>
+      <div class="nav-item" onclick="switchTab('simulation',this)"><i class="ti ti-radio"></i>Simulation réseau</div>
+      <div class="nav-item" onclick="switchTab('topology',this)"><i class="ti ti-topology-star-3"></i>Topologie LoRaWAN</div>
+      <div class="nav-item" onclick="switchTab('qos',this)"><i class="ti ti-chart-bar"></i>QoS & Propagation</div>
+      <div class="nav-item" onclick="switchTab('compare',this)"><i class="ti ti-git-compare"></i>Comparaison LPWAN</div>
+      <div class="nav-item" onclick="switchTab('adr',this)"><i class="ti ti-brain"></i>Optimisation IA (ADR)</div>
+      <div class="nav-item" onclick="switchTab('map',this)"><i class="ti ti-map-pin"></i>Carte de la zone</div>
+      <div class="nav-item" onclick="switchTab('irrigation',this)"><i class="ti ti-droplet-filled-2"></i>Irrigation automatique</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sf-badge">
+      SF9 recommandé ★<br>
+      <span style="opacity:.6;font-size:10px;">Notto Gouye – 75 km²</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <h1>Plateforme Smart Agriculture IoT</h1>
+      <p>Notto Gouye Diama, Sénégal &nbsp;·&nbsp; LoRaWAN 868 MHz &nbsp;·&nbsp; Master 1 IA & Smart Tech 2025-2026</p>
+    </div>
+    <div class="topbar-right">
+      <div class="time-display" id="clock">--:--:--</div>
+      <div class="status-pill"><div class="status-dot"></div>Réseau Stable</div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">PER Réseau (SF9)</div>
+      <div class="kpi-value green" id="kpi-per">8.3%</div>
+      <div class="kpi-sub">Packet Error Rate global</div>
+      <div class="kpi-trend up">▲ Optimal après ADR-ML</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Latence SF9</div>
+      <div class="kpi-value blue" id="kpi-lat">3.6s</div>
+      <div class="kpi-sub">ToA = 329 ms</div>
+      <div class="kpi-trend up">▼ Faible charge ALOHA</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Énergie / msg</div>
+      <div class="kpi-value orange" id="kpi-energy">21.7mJ</div>
+      <div class="kpi-sub">Durée vie ~2.8 ans</div>
+      <div class="kpi-trend down">↑ Batterie 2000 mAh</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Couverture réseau</div>
+      <div class="kpi-value purple" id="kpi-cov">94.2%</div>
+      <div class="kpi-sub">3 gateways / 75 km²</div>
+      <div class="kpi-trend up">▲ Portée eff. 4.8 km</div>
+    </div>
+  </div>
+
+  <!-- TABS CONTENT -->
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-chart-line"></i>PER vs Spreading Factor</h3>
+        <div class="chart-wrap"><canvas id="chartPER"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-bolt"></i>Énergie par message (mJ)</h3>
+        <div class="chart-wrap"><canvas id="chartEnergy"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-arrow-right"></i>Portée max vs SF (km)</h3>
+        <div class="chart-wrap"><canvas id="chartRange"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-activity"></i>Débit utile vs SF (bps)</h3>
+        <div class="chart-wrap"><canvas id="chartDebit"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3><i class="ti ti-table"></i>Tableau récapitulatif des indicateurs par Spreading Factor</h3>
+      <table>
+        <tr>
+          <th>SF</th><th>Débit (bps)</th><th>Sens. (dBm)</th>
+          <th>MAPL (dB)</th><th>Portée (km)</th>
+          <th>ToA (ms)</th><th>Énergie (mJ)</th>
+          <th>PER (%)</th><th>Durée vie (ans)</th><th>Statut</th>
+        </tr>
+        <tr><td>SF7</td><td>2393</td><td>-123.0</td><td>129.0</td><td>3.12</td><td>61.4</td><td>5.52</td><td>6.2</td><td>5.8</td><td><span class="tag tag-blue">Rapide</span></td></tr>
+        <tr><td>SF8</td><td>1367</td><td>-126.0</td><td>132.0</td><td>4.05</td><td>112.6</td><td>9.13</td><td>7.3</td><td>4.1</td><td><span class="tag tag-green">Bon</span></td></tr>
+        <tr class="opt-row"><td><strong>SF9</strong></td><td><strong>764</strong></td><td><strong>-129.0</strong></td><td><strong>135.0</strong></td><td><strong>5.20</strong></td><td><strong>205.8</strong></td><td><strong>21.7</strong></td><td><strong>8.3</strong></td><td><strong>2.8</strong></td><td><span class="tag tag-green">★ Optimal</span></td></tr>
+        <tr><td>SF10</td><td>429</td><td>-132.0</td><td>138.0</td><td>6.71</td><td>411.6</td><td>36.6</td><td>10.1</td><td>1.8</td><td><span class="tag tag-orange">Équilibré</span></td></tr>
+        <tr><td>SF11</td><td>244</td><td>-134.5</td><td>140.5</td><td>7.94</td><td>823.1</td><td>72.9</td><td>13.4</td><td>1.0</td><td><span class="tag tag-orange">Lent</span></td></tr>
+        <tr><td>SF12</td><td>122</td><td>-137.0</td><td>143.0</td><td>9.68</td><td>1646.2</td><td>141.4</td><td>21.0</td><td>0.5</td><td><span class="tag tag-red">Très lent</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== SENSORS ===== -->
+  <div id="tab-sensors" class="tab-content">
+    <div class="sensor-grid">
+      <!-- Capteur 1 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">💧 Humidité Sol S1</div>
+          <span class="tag tag-green">EN LIGNE</span>
+        </div>
+        <div class="sensor-val blue" id="hum1">32%</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-92 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">7 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF9</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">206 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>85%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:85%;background:var(--green)"></div></div>
+        </div>
+      </div>
+      <!-- Capteur 2 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">🌡️ Température T1</div>
+          <span class="tag tag-orange">ALERTE</span>
+        </div>
+        <div class="sensor-val" style="color:var(--orange)" id="temp1">38°C</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-87 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">9 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF9</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">206 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>67%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:67%;background:var(--orange)"></div></div>
+        </div>
+      </div>
+      <!-- Capteur 3 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">🌊 Niveau Eau N1</div>
+          <span class="tag tag-green">EN LIGNE</span>
+        </div>
+        <div class="sensor-val green" id="water1">46cm</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-90 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">6 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF9</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">206 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>78%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:78%;background:var(--green)"></div></div>
+        </div>
+      </div>
+      <!-- Capteur 4 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">💧 Humidité Sol S2</div>
+          <span class="tag tag-green">EN LIGNE</span>
+        </div>
+        <div class="sensor-val blue" id="hum2">28%</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-95 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">5 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF10</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">412 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>91%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:91%;background:var(--green)"></div></div>
+        </div>
+      </div>
+      <!-- Capteur 5 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">🌡️ Température T2</div>
+          <span class="tag tag-green">EN LIGNE</span>
+        </div>
+        <div class="sensor-val green" id="temp2">34°C</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-85 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">11 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF7</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">61 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>55%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:55%;background:var(--orange)"></div></div>
+        </div>
+      </div>
+      <!-- Capteur 6 -->
+      <div class="sensor-card">
+        <div class="sensor-head">
+          <div class="sensor-name">🌊 Niveau Eau N2</div>
+          <span class="tag tag-red">ALERTE</span>
+        </div>
+        <div class="sensor-val" style="color:var(--red)" id="water2">12cm</div>
+        <div class="sensor-stats">
+          <div class="stat-item"><div class="stat-label">RSSI</div><div class="stat-val">-100 dBm</div></div>
+          <div class="stat-item"><div class="stat-label">SNR</div><div class="stat-val">3 dB</div></div>
+          <div class="stat-item"><div class="stat-label">SF</div><div class="stat-val">SF11</div></div>
+          <div class="stat-item"><div class="stat-label">ToA</div><div class="stat-val">823 ms</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px"><span>Batterie</span><span>23%</span></div>
+          <div class="battery-bar"><div class="battery-fill" style="width:23%;background:var(--red)"></div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Historique mini-chart -->
+    <div class="panel">
+      <h3><i class="ti ti-chart-area"></i>Historique capteurs (dernières 12 mesures)</h3>
+      <div class="chart-wrap"><canvas id="chartSensors"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== SIMULATION ===== -->
+  <div id="tab-simulation" class="tab-content">
+    <div class="sim-grid">
+      <div class="panel">
+        <h3><i class="ti ti-adjustments"></i>Paramètres de simulation</h3>
+        <div class="control-group">
+          <div class="control-label">Spreading Factor (SF) <span id="lbl-sf">SF9</span></div>
+          <input type="range" min="7" max="12" value="9" id="sl-sf" oninput="updateSim()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Nombre de nœuds <span id="lbl-nodes">50</span></div>
+          <input type="range" min="5" max="200" value="50" id="sl-nodes" oninput="updateSim()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Distance à la Gateway <span id="lbl-dist">4.8 km</span></div>
+          <input type="range" min="1" max="15" step="0.1" value="4.8" id="sl-dist" oninput="updateSim()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Puissance TX (dBm) <span id="lbl-power">14 dBm</span></div>
+          <input type="range" min="2" max="14" value="14" id="sl-power" oninput="updateSim()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Intervalle émission <span id="lbl-interval">15 min</span></div>
+          <input type="range" min="1" max="60" value="15" id="sl-interval" oninput="updateSim()">
+        </div>
+        <div class="control-group">
+          <div class="control-label">Nombre de Gateways <span id="lbl-gw">3</span></div>
+          <input type="range" min="1" max="10" value="3" id="sl-gw" oninput="updateSim()">
+        </div>
+        <button class="btn" onclick="runSimulation()"><i class="ti ti-player-play"></i>Lancer la simulation complète</button>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-chart-bar"></i>Résultats en temps réel</h3>
+        <div class="sim-result-grid" id="sim-results">
+          <div class="sim-result-item"><div class="sim-result-val green" id="res-per">8.3%</div><div class="sim-result-label">PER</div></div>
+          <div class="sim-result-item"><div class="sim-result-val blue" id="res-lat">3.6 s</div><div class="sim-result-label">Latence</div></div>
+          <div class="sim-result-item"><div class="sim-result-val orange" id="res-energy">21.7 mJ</div><div class="sim-result-label">Énergie/msg</div></div>
+          <div class="sim-result-item"><div class="sim-result-val purple" id="res-life">2.8 ans</div><div class="sim-result-label">Durée vie</div></div>
+          <div class="sim-result-item"><div class="sim-result-val blue" id="res-debit">764 bps</div><div class="sim-result-label">Débit utile</div></div>
+          <div class="sim-result-item"><div class="sim-result-val green" id="res-cover">94.2%</div><div class="sim-result-label">Couverture</div></div>
+          <div class="sim-result-item"><div class="sim-result-val orange" id="res-mapl">135 dB</div><div class="sim-result-label">MAPL</div></div>
+          <div class="sim-result-item"><div class="sim-result-val purple" id="res-toa">206 ms</div><div class="sim-result-label">ToA</div></div>
+        </div>
+        <div class="chart-wrap-tall" style="margin-top:14px"><canvas id="chartSim"></canvas></div>
+      </div>
+    </div>
+    <!-- Okumura Hata chart -->
+    <div class="panel" style="margin-top:16px">
+      <h3><i class="ti ti-wave-sine"></i>Modèle Okumura-Hata — Pertes de propagation (Zone rurale 868 MHz)</h3>
+      <div class="chart-wrap-tall"><canvas id="chartOkumura"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== TOPOLOGY ===== -->
+  <div id="tab-topology" class="tab-content">
+    <div class="panel" style="margin-bottom:16px">
+      <h3><i class="ti ti-topology-star-3"></i>Architecture LoRaWAN — Notto Gouye Diama</h3>
+      <div class="topo-container">
+        <div class="topo-node">
+          <div class="topo-icon" style="background:rgba(79,163,247,0.15);color:var(--blue)">💧</div>
+          <div class="topo-name">Capteurs IoT</div>
+          <div class="topo-sub">50 nœuds agricoles</div>
+          <div class="topo-proto">SX1276</div>
+        </div>
+        <div class="topo-arrow">
+          <div style="text-align:center">
+            <div class="topo-arrow-line"></div>
+            <div style="font-size:9px;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">LoRa 868MHz</div>
+          </div>
+        </div>
+        <div class="topo-node">
+          <div class="topo-icon" style="background:rgba(99,210,159,0.15);color:var(--green)">📡</div>
+          <div class="topo-name">Gateways (×3)</div>
+          <div class="topo-sub">Portée 4.8 km</div>
+          <div class="topo-proto">RAK2245</div>
+        </div>
+        <div class="topo-arrow">
+          <div style="text-align:center">
+            <div class="topo-arrow-line"></div>
+            <div style="font-size:9px;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">IP/4G</div>
+          </div>
+        </div>
+        <div class="topo-node">
+          <div class="topo-icon" style="background:rgba(167,139,250,0.15);color:var(--purple)">🖧</div>
+          <div class="topo-name">Network Server</div>
+          <div class="topo-sub">Chirpstack v4</div>
+          <div class="topo-proto">LoRaWAN 1.0.4</div>
+        </div>
+        <div class="topo-arrow">
+          <div style="text-align:center">
+            <div class="topo-arrow-line"></div>
+            <div style="font-size:9px;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">HTTPS/MQTT</div>
+          </div>
+        </div>
+        <div class="topo-node">
+          <div class="topo-icon" style="background:rgba(245,166,35,0.15);color:var(--orange)">☁️</div>
+          <div class="topo-name">Cloud IoT</div>
+          <div class="topo-sub">Stockage & API</div>
+          <div class="topo-proto">REST API</div>
+        </div>
+        <div class="topo-arrow">
+          <div style="text-align:center">
+            <div class="topo-arrow-line"></div>
+            <div style="font-size:9px;color:var(--green);margin-top:4px;font-family:'JetBrains Mono',monospace">Inference</div>
+          </div>
+        </div>
+        <div class="topo-node">
+          <div class="topo-icon" style="background:rgba(242,107,107,0.15);color:var(--red)">🧠</div>
+          <div class="topo-name">Analyse IA</div>
+          <div class="topo-sub">ADR Q-Learning</div>
+          <div class="topo-proto">ADR-ML</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-map"></i>Dimensionnement Gateways</h3>
+        <table>
+          <tr><th>Paramètre</th><th>Valeur</th></tr>
+          <tr><td>Zone à couvrir</td><td>75 km²</td></tr>
+          <tr><td>SF recommandé</td><td><span class="tag tag-green">SF9</span></td></tr>
+          <tr><td>Portée effective</td><td>4.8 km (×0.7 rural)</td></tr>
+          <tr><td>Surface par GW</td><td>~72.4 km²</td></tr>
+          <tr><td>Nb GW minimum</td><td>2</td></tr>
+          <tr><td>Nb GW déployé</td><td><strong>3</strong></td></tr>
+          <tr><td>Couverture obtenue</td><td><span class="tag tag-green">94.2%</span></td></tr>
+          <tr><td>Hauteur GW</td><td>15 m (mât)</td></tr>
+          <tr><td>Fréquence</td><td>868 MHz (ISM)</td></tr>
+        </table>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-cpu"></i>Paramètres physiques SX1276</h3>
+        <table>
+          <tr><th>Paramètre</th><th>Valeur</th></tr>
+          <tr><td>Puissance TX</td><td>14 dBm</td></tr>
+          <tr><td>Gain antenne</td><td>2 dBi</td></tr>
+          <tr><td>Figure de bruit</td><td>6 dB</td></tr>
+          <tr><td>Largeur de bande</td><td>125 kHz</td></tr>
+          <tr><td>Code Rate</td><td>4/5</td></tr>
+          <tr><td>Courant TX</td><td>90 mA (SF9)</td></tr>
+          <tr><td>Courant RX</td><td>11 mA</td></tr>
+          <tr><td>Courant veille</td><td>1 µA</td></tr>
+          <tr><td>Batterie</td><td>2000 mAh / 3.3V</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QOS ===== -->
+  <div id="tab-qos" class="tab-content">
+    <div class="qos-grid" style="margin-bottom:16px">
+      <div class="panel">
+        <h3><i class="ti ti-signal"></i>Indicateurs QoS par SF</h3>
+        <div id="qos-bars">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-chart-radar"></i>Analyse multi-indicateurs SF9</h3>
+        <div class="chart-wrap"><canvas id="chartRadar"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-wave-sine"></i>PER : composantes</h3>
+        <div class="chart-wrap"><canvas id="chartPERStack"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-battery"></i>Durée de vie batterie (2000 mAh)</h3>
+        <div class="chart-wrap"><canvas id="chartLife"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== COMPARE ===== -->
+  <div id="tab-compare" class="tab-content">
+    <div class="compare-grid" style="margin-bottom:16px">
+      <div class="tech-card selected">
+        <div class="tech-name" style="color:var(--green)">LoRaWAN</div>
+        <div class="tech-badge">★ Recommandé pour ce projet</div>
+        <div class="tech-row"><span class="tech-key">Portée</span><span class="tech-val" style="color:var(--green)">2–15 km</span></div>
+        <div class="tech-row"><span class="tech-key">Débit</span><span class="tech-val">0.3–50 kbps</span></div>
+        <div class="tech-row"><span class="tech-key">Fréquence</span><span class="tech-val">868 MHz (SN)</span></div>
+        <div class="tech-row"><span class="tech-key">Topologie</span><span class="tech-val">Étoile</span></div>
+        <div class="tech-row"><span class="tech-key">Coût module</span><span class="tech-val">~5–15 $</span></div>
+        <div class="tech-row"><span class="tech-key">Conso énergie</span><span class="tech-val" style="color:var(--green)">Très faible</span></div>
+        <div class="tech-row"><span class="tech-key">Durée vie</span><span class="tech-val" style="color:var(--green)">2–10 ans</span></div>
+        <div class="tech-row"><span class="tech-key">Licences</span><span class="tech-val" style="color:var(--green)">ISM (libre)</span></div>
+        <div class="tech-row"><span class="tech-key">Couverture SN</span><span class="tech-val" style="color:var(--green)">Déployable</span></div>
+        <div class="tech-row"><span class="tech-key">Standard</span><span class="tech-val">LoRa Alliance</span></div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name" style="color:var(--orange)">Sigfox</div>
+        <div class="tech-badge">Ultra low-power, débit limité</div>
+        <div class="tech-row"><span class="tech-key">Portée</span><span class="tech-val">3–50 km</span></div>
+        <div class="tech-row"><span class="tech-key">Débit</span><span class="tech-val">100 bps</span></div>
+        <div class="tech-row"><span class="tech-key">Fréquence</span><span class="tech-val">868/902 MHz</span></div>
+        <div class="tech-row"><span class="tech-key">Topologie</span><span class="tech-val">Étoile</span></div>
+        <div class="tech-row"><span class="tech-key">Coût module</span><span class="tech-val">~5–10 $</span></div>
+        <div class="tech-row"><span class="tech-key">Conso énergie</span><span class="tech-val" style="color:var(--green)">Très faible</span></div>
+        <div class="tech-row"><span class="tech-key">Durée vie</span><span class="tech-val">5–20 ans</span></div>
+        <div class="tech-row"><span class="tech-key">Licences</span><span class="tech-val">ISM (libre)</span></div>
+        <div class="tech-row"><span class="tech-key">Couverture SN</span><span class="tech-val" style="color:var(--red)">Absente</span></div>
+        <div class="tech-row"><span class="tech-key">Standard</span><span class="tech-val">Sigfox propriétaire</span></div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name" style="color:var(--blue)">NB-IoT</div>
+        <div class="tech-badge">Réseau cellulaire, fort débit</div>
+        <div class="tech-row"><span class="tech-key">Portée</span><span class="tech-val">1–10 km</span></div>
+        <div class="tech-row"><span class="tech-key">Débit</span><span class="tech-val">~250 kbps</span></div>
+        <div class="tech-row"><span class="tech-key">Fréquence</span><span class="tech-val">LTE (700–900MHz)</span></div>
+        <div class="tech-row"><span class="tech-key">Topologie</span><span class="tech-val">Cellulaire</span></div>
+        <div class="tech-row"><span class="tech-key">Coût module</span><span class="tech-val">~15–30 $</span></div>
+        <div class="tech-row"><span class="tech-key">Conso énergie</span><span class="tech-val" style="color:var(--orange)">Modérée</span></div>
+        <div class="tech-row"><span class="tech-key">Durée vie</span><span class="tech-val">1–5 ans</span></div>
+        <div class="tech-row"><span class="tech-key">Licences</span><span class="tech-val" style="color:var(--red)">Opérateur</span></div>
+        <div class="tech-row"><span class="tech-key">Couverture SN</span><span class="tech-val" style="color:var(--orange)">Zones urbaines</span></div>
+        <div class="tech-row"><span class="tech-key">Standard</span><span class="tech-val">3GPP Release 13</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3><i class="ti ti-chart-bar"></i>Comparaison visuelle des indicateurs</h3>
+      <div class="chart-wrap-tall"><canvas id="chartCompare"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== ADR ML ===== -->
+  <div id="tab-adr" class="tab-content">
+    <div class="adr-metrics">
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--green)">SF9</div>
+        <div class="adr-label">SF optimal trouvé par Q-Learning</div>
+      </div>
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--blue)">500</div>
+        <div class="adr-label">Épisodes d'entraînement</div>
+      </div>
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--orange)">-0.1723</div>
+        <div class="adr-label">Récompense finale</div>
+      </div>
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--purple)">28.4%</div>
+        <div class="adr-label">Réduction PER estimée</div>
+      </div>
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--green)">α=0.1</div>
+        <div class="adr-label">Taux d'apprentissage</div>
+      </div>
+      <div class="adr-metric">
+        <div class="adr-val" style="color:var(--blue)">γ=0.9</div>
+        <div class="adr-label">Facteur d'actualisation</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-chart-line"></i>Courbe d'apprentissage Q-Learning (ADR)</h3>
+        <div class="chart-wrap-tall"><canvas id="chartQL"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-table"></i>Espace d'états Q-Table (partiel)</h3>
+        <table>
+          <tr><th>État (SF, TP)</th><th>a: ↑SF</th><th>a: ↓SF</th><th>a: ↑TP</th><th>a: ↓TP</th><th>a: Rest.</th></tr>
+          <tr><td>SF7, TP1</td><td>-0.23</td><td>—</td><td>-0.19</td><td>—</td><td>-0.21</td></tr>
+          <tr><td>SF8, TP1</td><td>-0.19</td><td>-0.24</td><td>-0.18</td><td>—</td><td>-0.20</td></tr>
+          <tr class="opt-row"><td><strong>SF9, TP2</strong></td><td>-0.18</td><td>-0.17</td><td>-0.16</td><td>-0.19</td><td><strong style="color:var(--green)">-0.14★</strong></td></tr>
+          <tr><td>SF10, TP2</td><td>-0.22</td><td>-0.17</td><td>-0.21</td><td>-0.18</td><td>-0.20</td></tr>
+          <tr><td>SF11, TP3</td><td>-0.25</td><td>-0.19</td><td>-0.24</td><td>-0.21</td><td>-0.23</td></tr>
+          <tr><td>SF12, TP4</td><td>—</td><td>-0.22</td><td>—</td><td>-0.28</td><td>-0.29</td></tr>
+        </table>
+        <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.7">
+          <strong style="color:var(--green)">Politique optimale :</strong> L'agent Q-Learning converge vers SF9 avec TP2 (puissance adaptative).
+          La récompense R = -PER/100 - 0.3×E_norm est maximisée en équilibrant
+          fiabilité (PER minimal) et efficacité énergétique (E réduite).
+          ε décroît de 0.3 → 0.05 sur 500 épisodes (exploration → exploitation).
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h3><i class="ti ti-settings-automation"></i>Bilan comparatif ADR Standard vs ADR-ML (Q-Learning)</h3>
+      <div class="chart-wrap"><canvas id="chartADRComp"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ===== CARTE ===== -->
+  <div id="tab-map" class="tab-content">
+
+    <div class="panel" style="margin-bottom:16px">
+      <h3><i class="ti ti-map-pin"></i>Carte IoT — Notto Gouye Diama, Sénégal &nbsp;·&nbsp; <span style="color:var(--muted);font-weight:400;font-size:13px">14.993°N, 17.005°W — Zone agricole 75 km²</span></h3>
+      <div id="lpwan-map"></div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#63d29f;border-color:#63d29f"></div>Humidité sol</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f5a623;border-color:#f5a623"></div>Température</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4fa3f7;border-color:#4fa3f7"></div>Niveau eau</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f26b6b;border-color:#f26b6b"></div>Critique</div>
+        <div class="legend-item"><div class="legend-sq" style="background:rgba(167,139,250,0.2);border-color:#a78bfa"></div>Gateway LoRaWAN</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--muted)">Cliquer sur un capteur pour les détails &nbsp;·&nbsp; Cercles en pointillés = couverture gateway SF9 (4.8 km)</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3><i class="ti ti-list"></i>Inventaire des nœuds déployés</h3>
+        <div style="overflow-x:auto">
+        <table id="nodes-table">
+          <tr><th>#</th><th>Nom</th><th>Type</th><th>Lat</th><th>Lng</th><th>Valeur</th><th>SF</th><th>RSSI</th><th>Bat.</th><th>État</th></tr>
+        </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-router"></i>Gateways LoRaWAN — Couverture 94.2%</h3>
+        <table>
+          <tr><th>GW</th><th>Localisation</th><th>Coordonnées</th><th>Nœuds</th><th>SF opt.</th><th>Statut</th></tr>
+          <tr><td>GW-01</td><td>Centre-village</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px">14.9930, -17.0050</td><td>22</td><td>SF9</td><td><span class="tag tag-green">Actif</span></td></tr>
+          <tr><td>GW-02</td><td>Zone Est</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px">14.9880, -16.9750</td><td>18</td><td>SF9</td><td><span class="tag tag-green">Actif</span></td></tr>
+          <tr><td>GW-03</td><td>Zone Ouest</td><td style="font-family:'JetBrains Mono',monospace;font-size:11px">14.9980, -17.0350</td><td>10</td><td>SF9</td><td><span class="tag tag-green">Actif</span></td></tr>
+        </table>
+        <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:10px;font-size:12px;color:var(--muted);line-height:1.7">
+          <strong style="color:var(--green)">Modèle Okumura-Hata :</strong> Portée effective SF9 = 5.2 km × 0.7 (facteur rural) = <strong style="color:var(--text)">4.8 km</strong>.
+          Surface couverte par GW = π × 4.8² ≈ 72.4 km². 3 GW pour 75 km² → couverture <strong style="color:var(--green)">94.2%</strong>.
+          Fréquence : 868 MHz ISM. Hauteur GW : 15 m (mât).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== IRRIGATION ===== -->
+  <div id="tab-irrigation" class="tab-content">
+
+    <!-- Seuils -->
+    <div class="threshold-panel">
+      <h3 style="margin-bottom:0"><i class="ti ti-adjustments" style="color:var(--green)"></i>Seuils de décision automatique d'irrigation (configurables)</h3>
+      <div class="threshold-grid">
+        <div class="threshold-item">
+          <div class="threshold-lbl">💧 Humidité sol — déclenchement</div>
+          <div class="threshold-row">
+            <input type="number" id="thr-hum" value="30" min="10" max="60" oninput="evalAll()">
+            <span class="threshold-unit">%</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Si humidité &lt; seuil → déclencher irrigation</div>
+        </div>
+        <div class="threshold-item">
+          <div class="threshold-lbl">🌡️ Température — stress thermique</div>
+          <div class="threshold-row">
+            <input type="number" id="thr-temp" value="37" min="25" max="50" oninput="evalAll()">
+            <span class="threshold-unit">°C</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Si T° &gt; seuil → urgence irrigation</div>
+        </div>
+        <div class="threshold-item">
+          <div class="threshold-lbl">🌊 Niveau réservoir — alerte basse</div>
+          <div class="threshold-row">
+            <input type="number" id="thr-water" value="20" min="5" max="80" oninput="evalAll()">
+            <span class="threshold-unit">cm</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Si niveau &lt; seuil → alerte réservoir vide</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contrôles globaux -->
+    <div class="global-ctrl">
+      <button class="gctrl gctrl-green" onclick="activateAll()">💧 Irriguer toutes les zones</button>
+      <button class="gctrl gctrl-red"   onclick="stopAll()">⛔ Arrêter tout</button>
+      <button class="gctrl gctrl-blue"  onclick="evalAll()">🤖 Réévaluer (IA)</button>
+      <div class="mode-badge">Mode : <strong id="mode-lbl" style="color:var(--green)">Automatique IA</strong></div>
+    </div>
+
+    <!-- Zones -->
+    <div class="irrig-grid" id="irrig-zones"></div>
+
+    <!-- Log + Chart -->
+    <div class="grid-2">
+      <div class="irrig-log">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+          <i class="ti ti-list-check" style="color:var(--green)"></i>Journal d'événements LoRaWAN
+        </h3>
+        <div id="irrig-log-list"></div>
+      </div>
+      <div class="panel">
+        <h3><i class="ti ti-chart-area"></i>Consommation eau (L/h) — 12 dernières heures</h3>
+        <div class="chart-wrap"><canvas id="chartWater"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// =========================================================
+//  DATA (from MATLAB simulation Notto Gouye Diama)
+// =========================================================
+const SF_LABELS = ['SF7','SF8','SF9','SF10','SF11','SF12'];
+const DATA = {
+  debit:    [2393,1367,764,429,244,122],
+  sens:     [-123,-126,-129,-132,-134.5,-137],
+  mapl:     [129,132,135,138,140.5,143],
+  portee:   [3.12,4.05,5.20,6.71,7.94,9.68],
+  toa_ms:   [61.4,112.6,205.8,411.6,823.1,1646.2],
+  energy:   [5.52,9.13,21.7,36.6,72.9,141.4],
+  per_base: [1.8,2.5,3.1,3.8,4.4,5.0],
+  per_col:  [4.4,4.8,5.2,6.3,9.0,16.0],
+  per_tot:  [6.2,7.3,8.3,10.1,13.4,21.0],
+  life_ans: [5.8,4.1,2.8,1.8,1.0,0.5],
+  i_tx:     [28,56,90,90,90,125]
+};
+
+const COLORS = {
+  green:'#63d29f', blue:'#4fa3f7',
+  orange:'#f5a623', red:'#f26b6b',
+  purple:'#a78bfa', muted:'#7a8aa0'
+};
+
+const CHART_DEFAULTS = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ labels:{ color:'#e2e8f0', font:{family:'Space Grotesk',size:12} } } },
+  scales:{
+    x:{ ticks:{color:'#7a8aa0'}, grid:{color:'rgba(99,210,159,0.06)'} },
+    y:{ ticks:{color:'#7a8aa0'}, grid:{color:'rgba(99,210,159,0.06)'} }
+  }
+};
+
+function mkChart(id,type,data,opts={}) {
+  const ctx = document.getElementById(id);
+  if(!ctx) return null;
+  return new Chart(ctx, { type, data, options:{...CHART_DEFAULTS,...opts} });
+}
+
+// =========================================================
+//  INIT CHARTS
+// =========================================================
+function initCharts() {
+  // Dashboard charts
+  mkChart('chartPER','line',{
+    labels:SF_LABELS,
+    datasets:[{
+      label:'PER total (%)', data:DATA.per_tot,
+      borderColor:COLORS.red, backgroundColor:'rgba(242,107,107,0.1)',
+      borderWidth:2.5, tension:.4, fill:true,
+      pointBackgroundColor:DATA.per_tot.map((_,i)=>i===2?COLORS.green:COLORS.red),
+      pointRadius:DATA.per_tot.map((_,i)=>i===2?7:4)
+    },{
+      label:'PER base (%)', data:DATA.per_base,
+      borderColor:COLORS.orange, borderWidth:1.5, tension:.4,
+      borderDash:[4,3], pointRadius:3
+    }]
+  });
+
+  mkChart('chartEnergy','bar',{
+    labels:SF_LABELS,
+    datasets:[{
+      label:'Énergie/msg (mJ)',
+      data:DATA.energy,
+      backgroundColor:DATA.energy.map((_,i)=>i===2?COLORS.green:'rgba(79,163,247,0.5)'),
+      borderColor:DATA.energy.map((_,i)=>i===2?COLORS.green:COLORS.blue),
+      borderWidth:1.5, borderRadius:6
+    }]
+  });
+
+  mkChart('chartRange','bar',{
+    labels:SF_LABELS,
+    datasets:[{
+      label:'Portée max (km)',
+      data:DATA.portee,
+      backgroundColor:DATA.portee.map((_,i)=>i===2?COLORS.green:'rgba(167,139,250,0.5)'),
+      borderColor:DATA.portee.map((_,i)=>i===2?COLORS.green:COLORS.purple),
+      borderWidth:1.5, borderRadius:6
+    }]
+  });
+
+  mkChart('chartDebit','line',{
+    labels:SF_LABELS,
+    datasets:[{
+      label:'Débit utile (bps)', data:DATA.debit,
+      borderColor:COLORS.blue, backgroundColor:'rgba(79,163,247,0.1)',
+      borderWidth:2.5, tension:.4, fill:true
+    }]
+  });
+
+  // Sensor history
+  const hours = Array.from({length:12},(_,i)=>`${String(i*5%60).padStart(2,'0')}min`);
+  mkChart('chartSensors','line',{
+    labels:hours,
+    datasets:[
+      { label:'Humidité sol (%)', data:[30,32,31,33,34,32,31,30,32,33,32,32], borderColor:COLORS.blue, tension:.4, borderWidth:2, pointRadius:2 },
+      { label:'Température (°C)', data:[36,37,38,38,39,38,37,36,37,38,38,38], borderColor:COLORS.orange, tension:.4, borderWidth:2, pointRadius:2 },
+      { label:'Niveau eau (cm)', data:[48,47,46,46,45,46,47,46,46,45,46,46], borderColor:COLORS.green, tension:.4, borderWidth:2, pointRadius:2 }
+    ]
+  });
+
+  // Simulation chart
+  window.simChart = mkChart('chartSim','radar',{
+    labels:['PER','Énergie','Latence','Couverture','Débit (norm.)','Durée vie'],
+    datasets:[{
+      label:'SF9 (actuel)',
+      data:[92, 75, 80, 94, 32, 70],
+      borderColor:COLORS.green, backgroundColor:'rgba(99,210,159,0.15)',
+      borderWidth:2, pointBackgroundColor:COLORS.green
+    }]
+  },{
+    scales:{
+      r:{
+        ticks:{color:'#7a8aa0',backdropColor:'transparent',font:{size:10}},
+        grid:{color:'rgba(99,210,159,0.08)'},
+        pointLabels:{color:'#e2e8f0',font:{size:11}},
+        min:0,max:100
+      }
+    },
+    plugins:{ legend:{ labels:{ color:'#e2e8f0' } } }
+  });
+
+  // Okumura-Hata
+  const dist = Array.from({length:119},(_,i)=>(i+1)*0.1);
+  const freq=868, hgw=15, hnode=1.5;
+  const a_hm = (1.1*Math.log10(freq)-0.7)*hnode - (1.56*Math.log10(freq)-0.8);
+  const L_rural = d => {
+    const lu = 69.55 + 26.16*Math.log10(freq) - 13.82*Math.log10(hgw) - a_hm
+      + (44.9 - 6.55*Math.log10(hgw))*Math.log10(d);
+    return lu - 4.78*Math.pow(Math.log10(freq),2) + 18.33*Math.log10(freq) - 40.94;
+  };
+  const lvals = dist.map(d=>L_rural(d));
+  const mapl9 = 135, mapl7=129, mapl11=140.5, mapl12=143;
+  mkChart('chartOkumura','line',{
+    labels:dist.map(d=>d.toFixed(1)),
+    datasets:[
+      { label:'Okumura-Hata Rural (868MHz)', data:lvals, borderColor:COLORS.blue, borderWidth:2.5, tension:.3, pointRadius:0 },
+      { label:'MAPL SF7 (129dB)', data:dist.map(()=>mapl7), borderColor:COLORS.orange, borderWidth:1.5, borderDash:[5,4], pointRadius:0 },
+      { label:'MAPL SF9 (135dB)', data:dist.map(()=>mapl9), borderColor:COLORS.green, borderWidth:2, borderDash:[5,4], pointRadius:0 },
+      { label:'MAPL SF11 (140.5dB)', data:dist.map(()=>mapl11), borderColor:COLORS.purple, borderWidth:1.5, borderDash:[5,4], pointRadius:0 },
+      { label:'MAPL SF12 (143dB)', data:dist.map(()=>mapl12), borderColor:COLORS.red, borderWidth:1.5, borderDash:[5,4], pointRadius:0 }
+    ]
+  },{
+    scales:{
+      x:{
+        ticks:{ color:'#7a8aa0', maxTicksLimit:15, callback:(v,i)=>dist[i]%2===0?dist[i].toFixed(0)+' km':'' },
+        grid:{color:'rgba(99,210,159,0.06)'},
+        title:{display:true,text:'Distance (km)',color:'#7a8aa0'}
+      },
+      y:{ ticks:{color:'#7a8aa0'}, grid:{color:'rgba(99,210,159,0.06)'},
+          title:{display:true,text:'Pertes de propagation (dB)',color:'#7a8aa0'},
+          min:80,max:170 }
+    }
+  });
+
+  // QOS progress bars
+  const qosDiv = document.getElementById('qos-bars');
+  const indicators = [
+    { name:'PER SF7', val:6.2, max:25, color:COLORS.green },
+    { name:'PER SF9 ★', val:8.3, max:25, color:COLORS.green },
+    { name:'PER SF11', val:13.4, max:25, color:COLORS.orange },
+    { name:'PER SF12', val:21.0, max:25, color:COLORS.red },
+  ];
+  qosDiv.innerHTML = indicators.map(it=>`
+    <div class="progress-item">
+      <div class="progress-head"><span>${it.name}</span><span style="color:${it.color};font-family:'JetBrains Mono'">${it.val}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${it.val/25*100}%;background:${it.color}"></div></div>
+    </div>
+  `).join('') + `
+    <div style="height:10px"></div>
+    <div class="progress-item"><div class="progress-head"><span>Couverture (3 GW)</span><span style="color:${COLORS.green};font-family:'JetBrains Mono'">94.2%</span></div><div class="progress-bar"><div class="progress-fill" style="width:94.2%;background:${COLORS.green}"></div></div></div>
+    <div class="progress-item"><div class="progress-head"><span>Débit SF7 (norm.)</span><span style="color:${COLORS.blue};font-family:'JetBrains Mono'">100%</span></div><div class="progress-bar"><div class="progress-fill" style="width:100%;background:${COLORS.blue}"></div></div></div>
+    <div class="progress-item"><div class="progress-head"><span>Débit SF9 (norm.)</span><span style="color:${COLORS.blue};font-family:'JetBrains Mono'">32%</span></div><div class="progress-bar"><div class="progress-fill" style="width:32%;background:${COLORS.blue}"></div></div></div>
+    <div class="progress-item"><div class="progress-head"><span>Durée vie SF7</span><span style="color:${COLORS.purple};font-family:'JetBrains Mono'">5.8 ans</span></div><div class="progress-bar"><div class="progress-fill" style="width:58%;background:${COLORS.purple}"></div></div></div>
+    <div class="progress-item"><div class="progress-head"><span>Durée vie SF9 ★</span><span style="color:${COLORS.purple};font-family:'JetBrains Mono'">2.8 ans</span></div><div class="progress-bar"><div class="progress-fill" style="width:28%;background:${COLORS.purple}"></div></div></div>
+  `;
+
+  // Radar QoS SF9
+  mkChart('chartRadar','radar',{
+    labels:['PER faible','Énergie','Portée','Débit','Durée vie','Couverture'],
+    datasets:[
+      { label:'SF7', data:[93,87,32,100,58,70], borderColor:COLORS.blue, backgroundColor:'rgba(79,163,247,0.05)', borderWidth:1.5 },
+      { label:'SF9 ★', data:[92,65,53,32,28,94], borderColor:COLORS.green, backgroundColor:'rgba(99,210,159,0.1)', borderWidth:2.5, pointBackgroundColor:COLORS.green },
+      { label:'SF12', data:[79,4,100,5,5,100], borderColor:COLORS.red, backgroundColor:'rgba(242,107,107,0.05)', borderWidth:1.5 }
+    ]
+  },{
+    scales:{
+      r:{
+        min:0,max:100,
+        ticks:{color:'#7a8aa0',backdropColor:'transparent',stepSize:25,font:{size:9}},
+        grid:{color:'rgba(99,210,159,0.08)'},
+        pointLabels:{color:'#e2e8f0',font:{size:11}}
+      }
+    },
+    plugins:{legend:{labels:{color:'#e2e8f0'}}}
+  });
+
+  // PER stacked
+  mkChart('chartPERStack','bar',{
+    labels:SF_LABELS,
+    datasets:[
+      { label:'PER propagation', data:DATA.per_base, backgroundColor:'rgba(245,166,35,0.6)', borderWidth:0, borderRadius:4, stack:'per' },
+      { label:'PER collision ALOHA', data:DATA.per_col, backgroundColor:'rgba(242,107,107,0.6)', borderWidth:0, borderRadius:4, stack:'per' }
+    ]
+  },{plugins:{...CHART_DEFAULTS.plugins,tooltip:{mode:'index',intersect:false}}});
+
+  mkChart('chartLife','bar',{
+    labels:SF_LABELS,
+    datasets:[{
+      label:'Durée vie batterie (ans)',
+      data:DATA.life_ans,
+      backgroundColor:DATA.life_ans.map((_,i)=>i===0?COLORS.blue:i===2?COLORS.green:i>=4?COLORS.red:COLORS.orange),
+      borderWidth:1.5, borderRadius:6
+    }]
+  });
+
+  // Compare LPWAN
+  mkChart('chartCompare','bar',{
+    labels:['Portée max (km)','Débit (kbps)','Durée vie (ans)','Coût module ($)','Capacité pénétration'],
+    datasets:[
+      { label:'LoRaWAN', data:[15,50,10,10,8], backgroundColor:'rgba(99,210,159,0.6)', borderColor:COLORS.green, borderWidth:1.5, borderRadius:4 },
+      { label:'Sigfox', data:[50,0.1,20,7,6], backgroundColor:'rgba(245,166,35,0.6)', borderColor:COLORS.orange, borderWidth:1.5, borderRadius:4 },
+      { label:'NB-IoT', data:[10,250,5,22,9], backgroundColor:'rgba(79,163,247,0.6)', borderColor:COLORS.blue, borderWidth:1.5, borderRadius:4 }
+    ]
+  });
+
+  // Q-Learning curve (simulated)
+  const eps_data = Array.from({length:500},(_,i)=>{
+    const base = -0.5 + 0.35*(1-Math.exp(-i/150));
+    return base + (Math.random()-0.5)*0.12;
+  });
+  const smooth = eps_data.map((_,i)=>{
+    if(i<10) return eps_data[i];
+    return eps_data.slice(i-10,i).reduce((a,b)=>a+b,0)/10;
+  });
+  mkChart('chartQL','line',{
+    labels:Array.from({length:500},(_,i)=>i+1),
+    datasets:[
+      { label:'Récompense brute', data:eps_data, borderColor:'rgba(167,139,250,0.3)', borderWidth:1, pointRadius:0 },
+      { label:'Moyenne glissante (20 ep)', data:smooth, borderColor:COLORS.green, borderWidth:2.5, pointRadius:0, tension:.4 }
+    ]
+  },{
+    scales:{
+      x:{ticks:{color:'#7a8aa0',maxTicksLimit:10},grid:{color:'rgba(99,210,159,0.06)'},title:{display:true,text:'Épisode',color:'#7a8aa0'}},
+      y:{ticks:{color:'#7a8aa0'},grid:{color:'rgba(99,210,159,0.06)'},title:{display:true,text:'Récompense cumulée',color:'#7a8aa0'}}
+    }
+  });
+
+  // ADR comparison
+  mkChart('chartADRComp','bar',{
+    labels:SF_LABELS,
+    datasets:[
+      { label:'ADR Standard — PER (%)', data:[6.2,7.3,8.3,10.1,13.4,21.0], backgroundColor:'rgba(79,163,247,0.5)', borderColor:COLORS.blue, borderWidth:1.5, borderRadius:4 },
+      { label:'ADR-ML (Q-Learning) — PER (%)', data:[4.8,5.2,6.1,7.4,10.2,16.8], backgroundColor:'rgba(99,210,159,0.5)', borderColor:COLORS.green, borderWidth:1.5, borderRadius:4 }
+    ]
+  });
+}
+
+// =========================================================
+//  SIMULATION ENGINE (based on MATLAB formulas)
+// =========================================================
+const SF_DATA = {
+  7: { debit:2393, toa:61.4, energy:5.52, per_base:1.8, life:5.8, mapl:129, portee:3.12, sens:-123 },
+  8: { debit:1367, toa:112.6, energy:9.13, per_base:2.5, life:4.1, mapl:132, portee:4.05, sens:-126 },
+  9: { debit:764, toa:205.8, energy:21.7, per_base:3.1, life:2.8, mapl:135, portee:5.20, sens:-129 },
+  10:{ debit:429, toa:411.6, energy:36.6, per_base:3.8, life:1.8, mapl:138, portee:6.71, sens:-132 },
+  11:{ debit:244, toa:823.1, energy:72.9, per_base:4.4, life:1.0, mapl:140.5, portee:7.94, sens:-134.5 },
+  12:{ debit:122, toa:1646.2, energy:141.4, per_base:5.0, life:0.5, mapl:143, portee:9.68, sens:-137 }
+};
+
+function okumuraHata(d_km) {
+  const freq=868, hgw=15, hnode=1.5;
+  const a_hm=(1.1*Math.log10(freq)-0.7)*hnode-(1.56*Math.log10(freq)-0.8);
+  const lu=69.55+26.16*Math.log10(freq)-13.82*Math.log10(hgw)-a_hm
+    +(44.9-6.55*Math.log10(hgw))*Math.log10(d_km);
+  return lu-4.78*Math.pow(Math.log10(freq),2)+18.33*Math.log10(freq)-40.94;
+}
+
+function calcSim() {
+  const sf = parseInt(document.getElementById('sl-sf').value);
+  const nodes = parseInt(document.getElementById('sl-nodes').value);
+  const dist = parseFloat(document.getElementById('sl-dist').value);
+  const power = parseInt(document.getElementById('sl-power').value);
+  const interval_min = parseInt(document.getElementById('sl-interval').value);
+  const ngw = parseInt(document.getElementById('sl-gw').value);
+
+  const d = SF_DATA[sf];
+  const BW_Hz = 125000;
+  const NF_dB = 6;
+  const path_loss = okumuraHata(dist);
+  const EIRP = power + 2;
+  const mapl = EIRP - d.sens - NF_dB;
+  const margin = mapl - path_loss;
+
+  // PER propagation (based on margin)
+  const per_base = margin < 0 ? 35 : Math.max(0.5, d.per_base * (1 + Math.max(0, 5-margin)*0.1));
+
+  // PER collision ALOHA
+  const interval_s = interval_min * 60;
+  const lambda = nodes * 3600 / interval_s;
+  const rho = lambda * d.toa / 1000 / 3600;
+  const per_col = (1 - Math.exp(-2*rho)) * 100;
+  const per_tot = Math.min(35, per_base + per_col);
+
+  // Energy
+  const I_tx = sf <= 9 ? 90 : 125;
+  const E = (I_tx * d.toa/1000 + 11 * d.toa/1000 * 0.1) * 3.3; // mJ
+  const I_moy = (E / 3.3) / interval_s * 1000; // µA
+  const life = 2000 / (I_moy * 24 * 365 / 1000);
+
+  // Coverage
+  const portee_eff = dist <= d.portee * 0.7 ? d.portee * 0.7 : d.portee * 0.7 * Math.exp(-(dist - d.portee*0.7)*0.1);
+  const surface_gw = Math.PI * Math.pow(portee_eff, 2);
+  const cover = Math.min(100, ngw * surface_gw / 75 * 100);
+
+  return {
+    per: per_tot.toFixed(1),
+    lat: (d.toa/1000 * 0.8 + 1.5).toFixed(1),
+    energy: E.toFixed(1),
+    life: life.toFixed(1),
+    debit: d.debit,
+    cover: cover.toFixed(1),
+    mapl: mapl.toFixed(0),
+    toa: d.toa.toFixed(0)
+  };
+}
+
+function updateSim() {
+  const sf = document.getElementById('sl-sf').value;
+  const nodes = document.getElementById('sl-nodes').value;
+  const dist = parseFloat(document.getElementById('sl-dist').value);
+  const power = document.getElementById('sl-power').value;
+  const interval = document.getElementById('sl-interval').value;
+  const gw = document.getElementById('sl-gw').value;
+
+  document.getElementById('lbl-sf').textContent = 'SF'+sf;
+  document.getElementById('lbl-nodes').textContent = nodes;
+  document.getElementById('lbl-dist').textContent = dist.toFixed(1)+' km';
+  document.getElementById('lbl-power').textContent = power+' dBm';
+  document.getElementById('lbl-interval').textContent = interval+' min';
+  document.getElementById('lbl-gw').textContent = gw;
+
+  const r = calcSim();
+  const perNum = parseFloat(r.per);
+  const perColor = perNum < 5 ? COLORS.green : perNum < 15 ? COLORS.orange : COLORS.red;
+  document.getElementById('res-per').textContent = r.per+'%';
+  document.getElementById('res-per').style.color = perColor;
+  document.getElementById('res-lat').textContent = r.lat+' s';
+  document.getElementById('res-energy').textContent = r.energy+' mJ';
+  document.getElementById('res-life').textContent = r.life+' ans';
+  document.getElementById('res-debit').textContent = r.debit+' bps';
+  document.getElementById('res-cover').textContent = r.cover+'%';
+  document.getElementById('res-mapl').textContent = r.mapl+' dB';
+  document.getElementById('res-toa').textContent = r.toa+' ms';
+
+  // Update KPIs
+  document.getElementById('kpi-per').textContent = r.per+'%';
+  document.getElementById('kpi-lat').textContent = r.lat+'s';
+  document.getElementById('kpi-energy').textContent = r.energy+'mJ';
+  document.getElementById('kpi-cov').textContent = r.cover+'%';
+
+  if(window.simChart) {
+    const sfI = parseInt(sf)-7;
+    const coverNorm = parseFloat(r.cover);
+    const debitNorm = Math.round(SF_DATA[parseInt(sf)].debit / 2393 * 100);
+    const lifeNorm = Math.round(parseFloat(r.life) / 10 * 100);
+    const energyNorm = Math.max(5, 100 - Math.round(parseFloat(r.energy) / 145 * 100));
+    const perNorm = Math.max(5, 100 - parseFloat(r.per)*3);
+    const latNorm = Math.max(5, 100 - parseFloat(r.lat)*10);
+    window.simChart.data.datasets[0].data = [perNorm, energyNorm, latNorm, coverNorm, debitNorm, lifeNorm];
+    window.simChart.data.datasets[0].label = `SF${sf} (simulation)`;
+    window.simChart.update();
+  }
+}
+
+function runSimulation() {
+  const r = calcSim();
+  const sf = document.getElementById('sl-sf').value;
+  const sfData = SF_DATA[parseInt(sf)];
+  alert(
+    `✅ SIMULATION TERMINÉE — SF${sf}\n` +
+    `${'─'.repeat(40)}\n` +
+    `PER total          : ${r.per}%\n` +
+    `Latence            : ${r.lat} s\n` +
+    `Énergie/msg        : ${r.energy} mJ\n` +
+    `Débit utile        : ${r.debit} bps\n` +
+    `Time on Air        : ${r.toa} ms\n` +
+    `Durée vie bat.     : ${r.life} ans\n` +
+    `MAPL               : ${r.mapl} dB\n` +
+    `Couverture         : ${r.cover}%\n` +
+    `${'─'.repeat(40)}\n` +
+    `Portée SF${sf} (Okumura): ${sfData.portee} km\n` +
+    `Sensibilité        : ${sfData.sens} dBm`
+  );
+}
+
+// =========================================================
+//  TAB NAVIGATION
+// =========================================================
+let _mapInited = false, _irrigInited = false;
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='map' && !_mapInited){ _mapInited=true; setTimeout(initMap,150); }
+  if(name==='irrigation' && !_irrigInited){ _irrigInited=true; setTimeout(initIrrigation,80); }
+}
+
+// =========================================================
+//  LIVE SENSOR UPDATE
+// =========================================================
+function updateSensors() {
+  const vals = {
+    hum1: [28,35], temp1:[36,41], water1:[40,55],
+    hum2:[24,32], temp2:[32,37], water2:[8,20]
+  };
+  for(const [id,[min,max]] of Object.entries(vals)) {
+    const el = document.getElementById(id);
+    if(!el) continue;
+    const prev = parseFloat(el.textContent);
+    const delta = (Math.random()-0.5)*2;
+    const nv = Math.max(min,Math.min(max,prev+delta));
+    const unit = id.startsWith('hum') ? '%' : id.startsWith('temp') ? '°C' : 'cm';
+    el.textContent = nv.toFixed(0) + unit;
+  }
+}
+
+
+// =========================================================
+//  MAP — Notto Gouye Diama (Leaflet + OpenStreetMap)
+// =========================================================
+const MAP_CENTER = [14.993, -17.005];
+
+const MAP_NODES = [
+  { id:'S1', name:'Humidité Sol S1',  type:'hum',   lat:14.9965, lng:-17.0110, val:'32%',  hum:32,  temp:null, water:null, rssi:-92,  snr:7,  sf:'SF9',  bat:85, status:'online' },
+  { id:'T1', name:'Température T1',   type:'temp',  lat:14.9895, lng:-17.0020, val:'38°C', hum:null, temp:38,  water:null, rssi:-87,  snr:9,  sf:'SF9',  bat:67, status:'alert'  },
+  { id:'N1', name:'Niveau Eau N1',    type:'water', lat:14.9978, lng:-16.9985, val:'46cm', hum:null, temp:null, water:46,  rssi:-90,  snr:6,  sf:'SF9',  bat:78, status:'online' },
+  { id:'S2', name:'Humidité Sol S2',  type:'hum',   lat:14.9845, lng:-17.0155, val:'28%',  hum:28,  temp:null, water:null, rssi:-95,  snr:5,  sf:'SF10', bat:91, status:'online' },
+  { id:'T2', name:'Température T2',   type:'temp',  lat:15.0002, lng:-17.0205, val:'34°C', hum:null, temp:34,  water:null, rssi:-85,  snr:11, sf:'SF7',  bat:55, status:'online' },
+  { id:'N2', name:'Niveau Eau N2',    type:'water', lat:14.9882, lng:-16.9905, val:'12cm', hum:null, temp:null, water:12,  rssi:-100, snr:3,  sf:'SF11', bat:23, status:'critical'},
+  { id:'S3', name:'Humidité Sol S3',  type:'hum',   lat:15.0018, lng:-16.9950, val:'41%',  hum:41,  temp:null, water:null, rssi:-88,  snr:8,  sf:'SF9',  bat:72, status:'online' },
+  { id:'T3', name:'Température T3',   type:'temp',  lat:14.9808, lng:-17.0255, val:'36°C', hum:null, temp:36,  water:null, rssi:-93,  snr:6,  sf:'SF9',  bat:60, status:'online' },
+  { id:'S4', name:'Humidité Sol S4',  type:'hum',   lat:15.0052, lng:-17.0305, val:'25%',  hum:25,  temp:null, water:null, rssi:-96,  snr:4,  sf:'SF10', bat:44, status:'alert'  },
+  { id:'N3', name:'Niveau Eau N3',    type:'water', lat:14.9942, lng:-17.0402, val:'55cm', hum:null, temp:null, water:55,  rssi:-89,  snr:7,  sf:'SF9',  bat:88, status:'online' },
+  { id:'S5', name:'Humidité Sol S5',  type:'hum',   lat:14.9925, lng:-16.9885, val:'35%',  hum:35,  temp:null, water:null, rssi:-91,  snr:7,  sf:'SF9',  bat:79, status:'online' },
+  { id:'T4', name:'Température T4',   type:'temp',  lat:15.0035, lng:-17.0075, val:'39°C', hum:null, temp:39,  water:null, rssi:-86,  snr:10, sf:'SF9',  bat:63, status:'alert'  },
+];
+
+const MAP_GATEWAYS = [
+  { id:'GW-01', name:'Gateway Centre', lat:14.9930, lng:-17.0050, nodes:22 },
+  { id:'GW-02', name:'Gateway Est',    lat:14.9880, lng:-16.9750, nodes:18 },
+  { id:'GW-03', name:'Gateway Ouest',  lat:14.9980, lng:-17.0350, nodes:10 },
+];
+
+const NODE_COLORS  = { hum:'#63d29f', temp:'#f5a623', water:'#4fa3f7' };
+const STAT_COLORS  = { online:'#63d29f', alert:'#f5a623', critical:'#f26b6b' };
+const NODE_EMOJIS  = { hum:'💧', temp:'🌡', water:'🌊' };
+let   mapInst = null;
+
+function _nodeIcon(node) {
+  const c = STAT_COLORS[node.status];
+  const e = NODE_EMOJIS[node.type];
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:38px;height:38px;border-radius:50%;background:${c}20;border:2.5px solid ${c};display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;box-shadow:0 0 0 5px ${c}15;transition:.2s">${e}</div>`,
+    iconSize:[38,38], iconAnchor:[19,19], popupAnchor:[0,-22]
+  });
+}
+function _gwIcon() {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:46px;height:46px;border-radius:11px;background:#a78bfa20;border:2.5px solid #a78bfa;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 0 0 6px #a78bfa12">📡</div>`,
+    iconSize:[46,46], iconAnchor:[23,23], popupAnchor:[0,-26]
+  });
+}
+function _statusTag(s){ return s==='online'?'<span style="color:#63d29f">✔ En ligne</span>':s==='alert'?'<span style="color:#f5a623">⚠ Alerte</span>':'<span style="color:#f26b6b">🔴 Critique</span>'; }
+
+function initMap() {
+  if(mapInst) return;
+  mapInst = L.map('lpwan-map', { center:MAP_CENTER, zoom:13, zoomControl:true });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap contributors, © CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(mapInst);
+
+  // Couverture gateways (cercles)
+  MAP_GATEWAYS.forEach(gw => {
+    L.circle([gw.lat, gw.lng], {
+      radius:4800, color:'#a78bfa', fillColor:'#a78bfa',
+      fillOpacity:.04, weight:1.5, dashArray:'7,5'
+    }).addTo(mapInst);
+  });
+
+  // Lignes capteur → gateway la plus proche
+  MAP_NODES.forEach(node => {
+    let best = MAP_GATEWAYS[0], bestD = Infinity;
+    MAP_GATEWAYS.forEach(gw => {
+      const d = Math.hypot(node.lat-gw.lat, node.lng-gw.lng);
+      if(d < bestD){ bestD=d; best=gw; }
+    });
+    L.polyline([[node.lat,node.lng],[best.lat,best.lng]], {
+      color: NODE_COLORS[node.type], weight:1.2, opacity:.22, dashArray:'5,6'
+    }).addTo(mapInst);
+  });
+
+  // Markers gateways
+  MAP_GATEWAYS.forEach(gw => {
+    L.marker([gw.lat,gw.lng],{icon:_gwIcon()}).addTo(mapInst).bindPopup(`
+      <div class="popup-title">📡 ${gw.name}</div>
+      <div class="popup-row"><span class="popup-key">ID</span><span class="popup-val">${gw.id}</span></div>
+      <div class="popup-row"><span class="popup-key">Coordonnées</span><span class="popup-val">${gw.lat.toFixed(4)}, ${gw.lng.toFixed(4)}</span></div>
+      <div class="popup-row"><span class="popup-key">Nœuds reliés</span><span class="popup-val">${gw.nodes}</span></div>
+      <div class="popup-row"><span class="popup-key">SF optimal</span><span class="popup-val">SF9</span></div>
+      <div class="popup-row"><span class="popup-key">Portée eff.</span><span class="popup-val">4.8 km</span></div>
+      <div class="popup-row"><span class="popup-key">Fréquence</span><span class="popup-val">868 MHz</span></div>
+      <div class="popup-row"><span class="popup-key">Statut</span><span class="popup-val" style="color:#63d29f">✔ Actif</span></div>
+    `);
+  });
+
+  // Markers capteurs
+  MAP_NODES.forEach(node => {
+    L.marker([node.lat,node.lng],{icon:_nodeIcon(node)}).addTo(mapInst).bindPopup(`
+      <div class="popup-title">${NODE_EMOJIS[node.type]} ${node.name}</div>
+      <div class="popup-row"><span class="popup-key">Mesure</span><span class="popup-val">${node.val}</span></div>
+      <div class="popup-row"><span class="popup-key">RSSI</span><span class="popup-val">${node.rssi} dBm</span></div>
+      <div class="popup-row"><span class="popup-key">SNR</span><span class="popup-val">${node.snr} dB</span></div>
+      <div class="popup-row"><span class="popup-key">SF</span><span class="popup-val">${node.sf}</span></div>
+      <div class="popup-row"><span class="popup-key">ToA</span><span class="popup-val">${{SF7:61,SF8:113,SF9:206,SF10:412,SF11:823,SF12:1646}[node.sf]} ms</span></div>
+      <div class="popup-row"><span class="popup-key">Batterie</span><span class="popup-val" style="color:${node.bat<30?'#f26b6b':node.bat<60?'#f5a623':'#63d29f'}">${node.bat}%</span></div>
+      <div class="popup-row"><span class="popup-key">Coordonnées</span><span class="popup-val">${node.lat.toFixed(4)}, ${node.lng.toFixed(4)}</span></div>
+      <div class="popup-row"><span class="popup-key">Statut</span><span class="popup-val">${_statusTag(node.status)}</span></div>
+    `);
+  });
+
+  // Tableau inventaire
+  const tbody = document.getElementById('nodes-table');
+  MAP_NODES.forEach((n,i) => {
+    const sc = n.status==='online'?'tag-green':n.status==='alert'?'tag-orange':'tag-red';
+    const sl = n.status==='online'?'EN LIGNE':n.status==='alert'?'ALERTE':'CRITIQUE';
+    tbody.innerHTML += `<tr>
+      <td>${i+1}</td>
+      <td style="font-weight:600">${n.name}</td>
+      <td>${NODE_EMOJIS[n.type]}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${n.lat.toFixed(4)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${n.lng.toFixed(4)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700">${n.val}</td>
+      <td style="font-family:'JetBrains Mono',monospace">${n.sf}</td>
+      <td style="font-family:'JetBrains Mono',monospace">${n.rssi}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:${n.bat<30?'var(--red)':n.bat<60?'var(--orange)':'var(--green)'}">${n.bat}%</td>
+      <td><span class="tag ${sc}">${sl}</span></td>
+    </tr>`;
+  });
+}
+
+// =========================================================
+//  IRRIGATION — Décision automatique IA via LoRaWAN
+// =========================================================
+const IRRIG_ZONES = [
+  {
+    id:'Z1', name:'Zone Nord', emoji:'🌾',
+    sensors:['S1','T1'], area:'25 km²',
+    lat:14.9978, lng:-17.0110,
+    getSensors: () => ({
+      hum: parseFloat(document.getElementById('hum1')?.textContent) || 32,
+      temp: parseFloat(document.getElementById('temp1')?.textContent) || 38,
+      water: parseFloat(document.getElementById('water1')?.textContent) || 46,
+    })
+  },
+  {
+    id:'Z2', name:'Zone Centre', emoji:'🌿',
+    sensors:['S3','T2','N1'], area:'28 km²',
+    lat:14.9930, lng:-17.0020,
+    getSensors: () => ({
+      hum: parseFloat(document.getElementById('hum2')?.textContent) || 28,
+      temp: parseFloat(document.getElementById('temp2')?.textContent) || 34,
+      water: parseFloat(document.getElementById('water1')?.textContent) || 46,
+    })
+  },
+  {
+    id:'Z3', name:'Zone Sud', emoji:'🌱',
+    sensors:['S2','S4','N2'], area:'22 km²',
+    lat:14.9850, lng:-17.0155,
+    getSensors: () => ({
+      hum: parseFloat(document.getElementById('hum2')?.textContent) || 25,
+      temp: parseFloat(document.getElementById('temp2')?.textContent) || 36,
+      water: parseFloat(document.getElementById('water2')?.textContent) || 12,
+    })
+  },
+];
+
+let irrigOverride = {};  // id → 'on'|'off'|'auto'
+
+function _decide(zone) {
+  const s = zone.getSensors();
+  const thrHum   = parseInt(document.getElementById('thr-hum')?.value)   || 30;
+  const thrTemp  = parseInt(document.getElementById('thr-temp')?.value)  || 37;
+  const thrWater = parseInt(document.getElementById('thr-water')?.value) || 20;
+
+  const ov = irrigOverride[zone.id] || 'auto';
+  if(ov === 'on')  return { action:'on',  reason:'⚙️ <strong>Commande manuelle :</strong> Pompe activée manuellement.', cls:'reason-on',  st:'st-on',  stLabel:'💧 IRRIGATION ON' };
+  if(ov === 'off') return { action:'off', reason:'⚙️ <strong>Commande manuelle :</strong> Pompe arrêtée manuellement.', cls:'reason-off', st:'st-off', stLabel:'⏹ ARRÊTÉE' };
+
+  // Réservoir critique
+  if(s.water < thrWater) return {
+    action:'warn', reason:`⚠️ <strong>Alerte réservoir :</strong> Niveau eau ${s.water.toFixed(0)} cm &lt; seuil ${thrWater} cm. Irrigation suspendue.`,
+    cls:'reason-warn', st:'st-warn', stLabel:'⚠ RÉSERVOIR BAS'
+  };
+  // Urgence thermique
+  if(s.temp > thrTemp && s.hum < thrHum + 5) return {
+    action:'on', reason:`🌡️ <strong>Stress thermique :</strong> T° = ${s.temp.toFixed(0)}°C &gt; ${thrTemp}°C ET humidité = ${s.hum.toFixed(0)}% ≈ seuil. Irrigation d'urgence.`,
+    cls:'reason-on', st:'st-on', stLabel:'💧 URGENCE THERM.'
+  };
+  // Humidité trop basse
+  if(s.hum < thrHum) return {
+    action:'on', reason:`💧 <strong>Humidité insuffisante :</strong> ${s.hum.toFixed(0)}% &lt; seuil ${thrHum}%. Déclenchement irrigation automatique.`,
+    cls:'reason-on', st:'st-on', stLabel:'💧 IRRIGATION ON'
+  };
+  // Tout bon
+  return {
+    action:'off', reason:`✅ <strong>Sol correct :</strong> Humidité ${s.hum.toFixed(0)}% ≥ ${thrHum}%, T° ${s.temp.toFixed(0)}°C ≤ ${thrTemp}°C. Aucune irrigation nécessaire.`,
+    cls:'reason-off', st:'st-off', stLabel:'✅ STANDBY'
+  };
+}
+
+function _renderZones() {
+  const container = document.getElementById('irrig-zones');
+  if(!container) return;
+  container.innerHTML = IRRIG_ZONES.map(zone => {
+    const s = zone.getSensors();
+    const d = _decide(zone);
+    return `
+    <div class="irrig-zone ${d.action==='on'?'pumping':d.action==='warn'?'warning':'stopped'}">
+      <div class="irrig-head">
+        <div class="irrig-name">${zone.emoji} ${zone.name}</div>
+        <div class="irrig-status ${d.st}">${d.stLabel}</div>
+      </div>
+      <div class="irrig-params">
+        <div class="irrig-param">
+          <div class="irrig-param-lbl">💧 Humidité sol</div>
+          <div class="irrig-param-val" style="color:${s.hum<(parseInt(document.getElementById('thr-hum')?.value)||30)?'var(--orange)':'var(--green)'}">${s.hum.toFixed(0)}%</div>
+        </div>
+        <div class="irrig-param">
+          <div class="irrig-param-lbl">🌡 Température</div>
+          <div class="irrig-param-val" style="color:${s.temp>(parseInt(document.getElementById('thr-temp')?.value)||37)?'var(--red)':'var(--text)'}">${s.temp.toFixed(0)}°C</div>
+        </div>
+        <div class="irrig-param">
+          <div class="irrig-param-lbl">🌊 Niveau eau</div>
+          <div class="irrig-param-val" style="color:${s.water<(parseInt(document.getElementById('thr-water')?.value)||20)?'var(--red)':'var(--blue)'}">${s.water.toFixed(0)} cm</div>
+        </div>
+        <div class="irrig-param">
+          <div class="irrig-param-lbl">📐 Surface</div>
+          <div class="irrig-param-val" style="color:var(--muted)">${zone.area}</div>
+        </div>
+      </div>
+      <div class="irrig-reason ${d.cls}">${d.reason}</div>
+      <div class="irrig-btns">
+        <button class="ibtn ibtn-on"  onclick="forceZone('${zone.id}','on')">💧 Irriguer</button>
+        <button class="ibtn ibtn-off" onclick="forceZone('${zone.id}','off')">⏹ Arrêter</button>
+        <button class="ibtn ibtn-auto" onclick="forceZone('${zone.id}','auto')">🤖 Auto</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _now() {
+  const d=new Date();
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+}
+
+function addLog(msg, icon, val) {
+  const list = document.getElementById('irrig-log-list');
+  if(!list) return;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${_now()}</span><span class="log-icon">${icon}</span><span class="log-msg">${msg}</span><span class="log-val">${val}</span>`;
+  list.prepend(entry);
+  // Keep max 30 entries
+  while(list.children.length > 30) list.removeChild(list.lastChild);
+}
+
+function forceZone(id, action) {
+  irrigOverride[id] = action;
+  const zone = IRRIG_ZONES.find(z=>z.id===id);
+  const label = action==='on'?'IRRIGUER':action==='off'?'STOP':'AUTO';
+  const icon  = action==='on'?'💧':action==='off'?'⛔':'🤖';
+  addLog(`Commande ${action==='auto'?'auto':action==='on'?'ON':'OFF'} — ${zone.name}`, icon, label);
+  _renderZones();
+}
+
+function evalAll() {
+  IRRIG_ZONES.forEach(zone => {
+    if(!irrigOverride[zone.id] || irrigOverride[zone.id]==='auto') irrigOverride[zone.id]='auto';
+    const d = _decide(zone);
+    addLog(`IA évalue ${zone.name}`, '🤖', d.action==='on'?'→ IRRIGUER':'→ STANDBY');
+  });
+  _renderZones();
+}
+
+function activateAll() {
+  IRRIG_ZONES.forEach(z=>{ irrigOverride[z.id]='on'; });
+  addLog('Toutes les zones activées (manuel)', '💧', 'GLOBAL ON');
+  document.getElementById('mode-lbl').textContent = 'Manuel';
+  _renderZones();
+}
+
+function stopAll() {
+  IRRIG_ZONES.forEach(z=>{ irrigOverride[z.id]='off'; });
+  addLog('Toutes les pompes arrêtées (manuel)', '⛔', 'GLOBAL OFF');
+  document.getElementById('mode-lbl').textContent = 'Manuel';
+  _renderZones();
+}
+
+function initIrrigation() {
+  irrigOverride = {};
+  addLog('Système LoRaWAN initialisé — SF9', '📡', 'BOOT OK');
+  addLog('3 Gateways connectées (GW-01,02,03)', '📡', 'GW OK');
+  addLog('Évaluation IA initiale en cours…', '🤖', 'AUTO');
+  evalAll();
+
+  // Chart consommation eau
+  const labels = Array.from({length:12},(_,i)=>`${String(i*2).padStart(2,'0')}h`);
+  mkChart('chartWater','line',{
+    labels,
+    datasets:[
+      { label:'Zone Nord (L/h)',   data:[0,0,130,145,165,155,85,0,0,115,135,105], borderColor:'#63d29f', backgroundColor:'rgba(99,210,159,0.07)', fill:true, tension:.4, borderWidth:2, pointRadius:3 },
+      { label:'Zone Centre (L/h)', data:[0,85,105,95,125,115,65,0,0,95,115,85],  borderColor:'#4fa3f7', backgroundColor:'rgba(79,163,247,0.07)',  fill:true, tension:.4, borderWidth:2, pointRadius:3 },
+      { label:'Zone Sud (L/h)',    data:[0,0,65,72,82,72,42,0,0,62,72,52],        borderColor:'#f5a623', backgroundColor:'rgba(245,166,35,0.05)',  fill:true, tension:.4, borderWidth:2, pointRadius:3 },
+    ]
+  });
+
+  // Réévaluation auto toutes les 5s si onglet actif
+  setInterval(()=>{
+    if(document.getElementById('tab-irrigation')?.classList.contains('active')) _renderZones();
+  }, 5000);
+}
+
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
+}
+
+// =========================================================
+//  INIT
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  updateSim();
+  updateClock();
+  setInterval(updateClock, 1000);
+  setInterval(updateSensors, 3000);
+});
+</script>
+</body>
+</html>
